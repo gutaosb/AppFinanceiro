@@ -16,5 +16,17 @@ engine = create_engine(DB_URL)
 #cria uma sessao para enviar consultas
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+#Dependencia para sessao do banco
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    except Exception as e:
+        db.rollback()
+        raise e
+    finally:
+        db.close()
+        
 #base para os modelos ORM
 Base = declarative_base()
+

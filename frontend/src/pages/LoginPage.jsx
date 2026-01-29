@@ -1,18 +1,24 @@
 import React, { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import api from "../api/api";
+import { useUserContext } from "../contexts/UserContext";
 
 function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [redirect, setRedirect] = useState(false);
+  const { setUser } = useUserContext();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (email && password) {
       try {
-        await api.post("/users/login", { email, password });
+        const { data } = await api.post("/users/login", {
+          email,
+          password,
+        });
+        setUser(data);
         setRedirect(true);
       } catch (error) {
         alert(error.response.data.detail || "Erro ao fazer login.");
