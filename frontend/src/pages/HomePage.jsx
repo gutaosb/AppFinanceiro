@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { useUserContext } from "../contexts/UserContext";
 import Header from "../components/Header";
 import DepositModal from "../components/DepositModal";
+import ExpenseModal from "../components/ExpenseModal.jsx";
+import EditTransactionModal from "../components/EditTransactionModal";
 import Transactions from "../components/Transactions.jsx";
 import api from "../api/api";
 
@@ -11,6 +13,8 @@ export default function HomePage() {
 
   const [transactions, setTransactions] = useState([]);
   const [isDepositOpen, setIsDepositOpen] = useState(false);
+  const [isExpenseOpen, setIsExpenseOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState(null);
 
   const totalBalance = useMemo(() => {
     return transactions.reduce((acc, t) => {
@@ -59,6 +63,7 @@ export default function HomePage() {
       });
 
       setTransactions((prev) => [response.data, ...prev]);
+      setIsExpenseOpen(false);
     } catch (error) {
       console.error("Erro ao registrar gasto:", error);
     }
@@ -74,8 +79,40 @@ export default function HomePage() {
     }
   }
 
+  async function clearUserTransactions(userId) {
+    if (!userId) return;
+
+    const confirmClear = window.confirm(
+      "Tem certeza que deseja apagar TODAS as transações?",
+    );
+    if (!confirmClear) return;
+
+    try {
+      await api.delete(`/transactions/user/${userId}`);
+      setTransactions([]);
+    } catch (error) {
+      console.error("Erro ao limpar transações do usuário:", error);
+    }
+  }
+
   function editTransaction(transaction) {
-    alert("Editar transação ainda será implementado 😉");
+    try {
+      setEditingTransaction(transaction);
+    } catch (error) {
+      console.error("Erro ao editar transação:", error);
+    }
+  }
+
+  async function updateTransaction(id, data) {
+    try {
+      const response = await api.put(`/transactions/${id}`, data);
+      setTransactions((prev) =>
+        prev.map((t) => (t.id === id ? response.data : t)),
+      );
+      setEditingTransaction(null);
+    } catch (error) {
+      console.error("Erro ao atualizar transação:", error);
+    }
   }
 
   // NÃO LOGADO
@@ -136,10 +173,18 @@ export default function HomePage() {
                 </button>
 
                 <button
-                  onClick={() => withdraw({ value: 0, justify: "" })}
+                  onClick={() => setIsExpenseOpen(true)}
                   className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-100"
                 >
                   + Gasto
+                </button>
+
+                <button
+                  onClick={() => clearUserTransactions(user.id)}
+                  disabled={transactions.length === 0}
+                  className="rounded-lg border border-red-500 px-4 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-40"
+                >
+                  Limpar tudo
                 </button>
               </div>
             </div>
@@ -157,6 +202,18 @@ export default function HomePage() {
         isOpen={isDepositOpen}
         onClose={() => setIsDepositOpen(false)}
         onSubmit={deposit}
+      />
+
+      <ExpenseModal
+        isOpen={isExpenseOpen}
+        onClose={() => setIsExpenseOpen(false)}
+        onSubmit={withdraw}
+      />
+
+      <EditTransactionModal
+        transaction={editingTransaction}
+        onClose={() => setEditingTransaction(null)}
+        onSubmit={updateTransaction}
       />
     </>
   );

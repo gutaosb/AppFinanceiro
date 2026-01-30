@@ -79,3 +79,15 @@ def delete_transaction(transaction_id: int, db: Session = Depends(get_db)):
     db.delete(transaction)
     db.commit()
     return transaction
+
+#deletar todas as transacoes de um usuario
+@router.delete("/user/{user_id}", response_model=list[TransactionResponse])
+def delete_user_transactions(user_id: int, db: Session = Depends(get_db)):
+    transactions = db.query(Transaction).filter(Transaction.user_id == user_id).all()
+    if not transactions:
+        raise HTTPException(status_code=404, detail="Nenhuma transação encontrada para este usuário")
+    
+    for transaction in transactions:
+        db.delete(transaction)
+    db.commit()
+    return transactions
